@@ -1,0 +1,9 @@
+IRC:
+  Nickname: kedo39
+  Server: irc.rizon.net:6697
+  IsSSL: true
+Slack:
+  Owner: kedo
+  Token: insert-token-for-slack-api-here
+ChannelMapping:
+  '#CAA-on-slack': '#CAA-on-irc'
