@@ -1,5 +1,6 @@
 IRC:
   Nickname: kedo39
+  Name: kedo
   Server: irc.rizon.net:6697
   IsSSL: true
 Slack:

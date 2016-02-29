@@ -18,7 +18,13 @@ func main() {
 
 	fmt.Printf("Loading config from: %v\n", *configPath)
 
-	parsedConfig := pino.LoadConfig(*configPath)
+	parsedConfig, err := pino.LoadConfig(*configPath)
+	if err != nil {
+		log.Fatalf("Could not load config: %v", err)
+	}
 
 	fmt.Printf("Parsed config: %#v\n", parsedConfig)
+
+	pino.NewPino(parsedConfig)
+
 }
