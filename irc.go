@@ -8,13 +8,15 @@ import (
 )
 
 type ircProxy struct {
-	config *IRCConfig
-	client *irc.Conn
+	config         *IRCConfig
+	client         *irc.Conn
+	incomingEvents chan *irc.Line
 }
 
 func newIRCProxy(config *IRCConfig) (*ircProxy, error) {
 	proxy := new(ircProxy)
 	proxy.config = config
+	proxy.incomingEvents = make(chan *irc.Line)
 
 	nick := config.Nickname
 	if nick == "" {
@@ -42,7 +44,34 @@ func newIRCProxy(config *IRCConfig) (*ircProxy, error) {
 	proxy.client = irc.Client(clientConfig)
 	proxy.client.EnableStateTracking()
 
+	proxy.registerEventHandlers()
+
 	return proxy, nil
+}
+
+func (proxy *ircProxy) registerEventHandlers() {
+	eventTypes := []string{
+		irc.CONNECTED,
+		irc.DISCONNECTED,
+		irc.ACTION,
+		irc.JOIN,
+		irc.INVITE,
+		irc.KICK,
+		irc.MODE,
+		irc.NICK,
+		irc.PART,
+		irc.PRIVMSG,
+		irc.QUIT,
+		irc.TOPIC,
+	}
+
+	sendLineToChannel := func(conn *irc.Conn, line *irc.Line) {
+		proxy.incomingEvents <- line
+	}
+
+	for _, eventType := range eventTypes {
+		proxy.client.HandleFunc(eventType, sendLineToChannel)
+	}
 }
 
 func (proxy *ircProxy) connect() error {
@@ -69,8 +98,4 @@ func (proxy *ircProxy) names(channel IRCChannel) []string {
 	}
 
 	return names
-}
-
-func (proxy *ircProxy) registerEventHandler(event string, handlerFunc irc.HandlerFunc) irc.Remover {
-	return proxy.client.HandleFunc(event, handlerFunc)
 }

@@ -13,18 +13,21 @@ func main() {
 	flag.Parse()
 
 	if *configPath == "" {
-		log.Fatal("Config path must be specified!")
+		log.Fatal("Config path must be specified!\n")
 	}
 
 	fmt.Printf("Loading config from: %v\n", *configPath)
 
 	parsedConfig, err := pino.LoadConfig(*configPath)
 	if err != nil {
-		log.Fatalf("Could not load config: %v", err)
+		log.Fatalf("Could not load config: %v\n", err)
 	}
 
 	fmt.Printf("Successfully parsed config\n")
 
-	pino.NewPino(parsedConfig)
-
+	p, err := pino.NewPino(parsedConfig)
+	if err != nil {
+		log.Fatalf("Could not create Pino: %v\n", err)
+	}
+	p.Run()
 }

@@ -67,3 +67,15 @@ func LoadConfig(path string) (*Config, error) {
 
 	return config, nil
 }
+
+func (config *Config) getUsedIRCChannels() []IRCChannel {
+	channels := make([]IRCChannel, len(config.ChannelMapping))
+	i := 0
+
+	for _, ircChannel := range config.ChannelMapping {
+		channels[i] = ircChannel
+		i++
+	}
+
+	return channels
+}
