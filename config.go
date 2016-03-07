@@ -28,6 +28,7 @@ type IRCConfig struct {
 	Nickname string                       `yaml:"Nickname"`
 	Name     string                       `yaml:"Name"`
 	Server   string                       `yaml:"Server"`
+	Password string                       `yaml:"Password"`
 	IsSSL    bool                         `yaml:"IsSSL"`
 	Channels map[IRCChannel]IRCChannelKey `yaml:"Channels"`
 }
@@ -51,6 +52,17 @@ func LoadConfig(path string) (*Config, error) {
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
 		return config, fmt.Errorf("Unable to parse YAML from config file %v: %v", path, err)
+	}
+
+	// Verify that the channel mapping is consistent with the configured IRC/Slack Channels
+	for slackChannel, ircChannel := range config.ChannelMapping {
+		if _, ok := config.IRC.Channels[ircChannel]; !ok {
+			return config, fmt.Errorf("IRC channel '%v' was specified in the channel mapping, but wasn't configured under IRC", ircChannel)
+		}
+
+		if _, ok := config.Slack.Channels[slackChannel]; !ok {
+			return config, fmt.Errorf("Slack channel '%v' was specified in the channel mapping, but wasn't configured under Slack", slackChannel)
+		}
 	}
 
 	return config, nil

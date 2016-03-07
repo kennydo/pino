@@ -23,7 +23,7 @@ func main() {
 		log.Fatalf("Could not load config: %v", err)
 	}
 
-	fmt.Printf("Parsed config: %#v\n", parsedConfig)
+	fmt.Printf("Successfully parsed config\n")
 
 	pino.NewPino(parsedConfig)
 
