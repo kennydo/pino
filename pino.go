@@ -32,7 +32,9 @@ func NewPino(config *Config) (*Pino, error) {
 
 	if err := ircClient.Connect(); err != nil {
 		fmt.Printf("Connection error: %s\n", err.Error())
+		return pino, nil
 	}
+
 	<-quit
 
 	return pino, nil
