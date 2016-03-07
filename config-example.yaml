@@ -3,8 +3,12 @@ IRC:
   Name: kedo
   Server: irc.rizon.net:6697
   IsSSL: true
+  Channels:
+    '#CAA': ''
 Slack:
   Owner: kedo
   Token: insert-token-for-slack-api-here
+  Channels:
+    '#CAA-on-slack': ''
 ChannelMapping:
-  '#CAA-on-slack': '#CAA-on-irc'
+  '#CAA-on-slack': '#CAA'
