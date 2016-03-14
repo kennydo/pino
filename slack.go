@@ -60,7 +60,7 @@ func generateUserIconURL(username string) string {
 	return fmt.Sprintf("http://www.gravatar.com/avatar/%x?d=identicon", md5.Sum([]byte(username)))
 }
 
-func (proxy *slackProxy) sendMessageAsUser(username string, text string, channelName SlackChannel) {
+func (proxy *slackProxy) sendMessageAsUser(channelName SlackChannel, username string, text string) {
 	channelID := proxy.channelNameToID[channelName]
 	params := slack.NewPostMessageParameters()
 	params.Username = username
@@ -73,7 +73,7 @@ func (proxy *slackProxy) sendMessageAsUser(username string, text string, channel
 	}
 }
 
-func (proxy *slackProxy) sendMessageAsBot(text string, channelName SlackChannel) {
+func (proxy *slackProxy) sendMessageAsBot(channelName SlackChannel, text string) {
 	channelID := proxy.channelNameToID[channelName]
 	params := slack.NewPostMessageParameters()
 

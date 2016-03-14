@@ -89,7 +89,7 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 
 				fmt.Printf("ACTION: %v %s\n", username, action)
 				message := fmt.Sprintf("> *%v %v*", username, action)
-				pino.slackProxy.sendMessageAsUser(username, message, pino.ircChannelToSlackChannel[channel])
+				pino.slackProxy.sendMessageAsUser(pino.ircChannelToSlackChannel[channel], username, message)
 
 			case irc.JOIN:
 				channel := IRCChannel(line.Text())
@@ -98,7 +98,7 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 
 				fmt.Printf("JOIN: %v(%v) has joined %v\n", line.Nick, line.Src, channel)
 				message := fmt.Sprintf("> *%v* (%v) joined the channel", username, usermask)
-				pino.slackProxy.sendMessageAsBot(message, pino.ircChannelToSlackChannel[channel])
+				pino.slackProxy.sendMessageAsBot(pino.ircChannelToSlackChannel[channel], message)
 
 				previousNickMemberships = pino.ircProxy.snapshotOfNicksInChannels()
 			case irc.INVITE:
@@ -127,7 +127,7 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 					fmt.Printf("MODE: (%v) %v sets %v %v\n", channel, username, mode, destination)
 
 					message := fmt.Sprintf("> *%v* sets *%v* *%v*", username, mode, destination)
-					pino.slackProxy.sendMessageAsBot(message, pino.ircChannelToSlackChannel[channel])
+					pino.slackProxy.sendMessageAsBot(pino.ircChannelToSlackChannel[channel], message)
 				}
 
 			case irc.NICK:
@@ -143,7 +143,7 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 					}
 
 					slackChannel := pino.ircChannelToSlackChannel[ircChannel]
-					pino.slackProxy.sendMessageAsBot(message, slackChannel)
+					pino.slackProxy.sendMessageAsBot(slackChannel, message)
 				}
 
 				previousNickMemberships = pino.ircProxy.snapshotOfNicksInChannels()
@@ -155,11 +155,19 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 				fmt.Printf("PART: (%v) %v(%v) has left (%s)\n", channel, username, usermask, reason)
 
 				message := fmt.Sprintf("> *%v* (%v) left the channel", username, usermask)
-				pino.slackProxy.sendMessageAsBot(message, pino.ircChannelToSlackChannel[channel])
+				pino.slackProxy.sendMessageAsBot(pino.ircChannelToSlackChannel[channel], message)
 
 				previousNickMemberships = pino.ircProxy.snapshotOfNicksInChannels()
 			case irc.PRIVMSG:
-				fmt.Printf("PRIVMSG: (%v) <%v> %v\n", line.Target(), line.Nick, line.Text())
+				target := line.Target()
+				username := line.Nick
+				text := line.Text()
+				fmt.Printf("PRIVMSG: (%v) <%v> %v\n", target, username, text)
+
+				possibleChannel := IRCChannel(target)
+				if slackChannel, ok := pino.ircChannelToSlackChannel[possibleChannel]; ok {
+					pino.slackProxy.sendMessageAsUser(slackChannel, username, text)
+				}
 
 			case irc.QUIT:
 				username := line.Nick
@@ -176,7 +184,7 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 					}
 
 					slackChannel := pino.ircChannelToSlackChannel[ircChannel]
-					pino.slackProxy.sendMessageAsBot(message, slackChannel)
+					pino.slackProxy.sendMessageAsBot(slackChannel, message)
 				}
 
 				previousNickMemberships = pino.ircProxy.snapshotOfNicksInChannels()
@@ -187,7 +195,7 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 				fmt.Printf("TOPIC: (%v) %v has changed the topic to \"%v\"\n", channel, username, topic)
 
 				message := fmt.Sprintf("> *%v* changed the topic to *%v*", username, topic)
-				pino.slackProxy.sendMessageAsBot(message, pino.ircChannelToSlackChannel[channel])
+				pino.slackProxy.sendMessageAsBot(pino.ircChannelToSlackChannel[channel], message)
 
 			default:
 				fmt.Printf("Received unrecognized line: %#v\n", line)
