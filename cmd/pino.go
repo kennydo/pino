@@ -29,5 +29,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not create Pino: %v\n", err)
 	}
-	p.Run()
+
+	if err := p.Run(); err != nil {
+		log.Fatalf("Runtime error: %v\n", err)
+	}
 }

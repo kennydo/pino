@@ -48,10 +48,10 @@ func NewPino(config *Config) (*Pino, error) {
 // Run connects to IRC and Slack and runs the main loop
 func (pino *Pino) Run() error {
 	if err := pino.ircProxy.connect(); err != nil {
-		return fmt.Errorf("IRC connection error: %s\n", err.Error())
+		return fmt.Errorf("IRC connection error: %s", err.Error())
 	}
 	if err := pino.slackProxy.connect(); err != nil {
-		return fmt.Errorf("Slack connection error: %s\n", err.Error())
+		return fmt.Errorf("Slack connection error: %s", err.Error())
 	}
 
 	// Channel to signal that the program should stop running
@@ -81,8 +81,13 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 					pino.ircProxy.join(ircChannel)
 				}
 
+				message := fmt.Sprintf("Connected to IRC on %v!", pino.ircProxy.config.Server)
+				pino.slackProxy.sendMessageToOwner(message)
+
 			case irc.DISCONNECTED:
 				fmt.Printf("Disconnected from IRC!")
+				message := fmt.Sprintf("Disconnected from IRC on %v!", pino.ircProxy.config.Server)
+				pino.slackProxy.sendMessageToOwner(message)
 
 			case irc.ACTION:
 				channel := IRCChannel(line.Target())
@@ -230,6 +235,7 @@ func (pino *Pino) handleSlackEvents(quit chan bool) {
 			case *slack.LatencyReport:
 			case *slack.PresenceChangeEvent:
 			case *slack.ReconnectUrlEvent:
+			case *slack.AckMessage:
 			default:
 				fmt.Printf("Received unrecognized Slack msg: %#v\n", msg.Data)
 			}

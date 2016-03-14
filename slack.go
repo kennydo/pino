@@ -9,11 +9,13 @@ import (
 )
 
 type slackProxy struct {
-	config          *SlackConfig
-	client          *slack.Client
-	rtm             *slack.RTM
-	channelNameToID map[SlackChannel]string
-	channelIDToName map[string]SlackChannel
+	config           *SlackConfig
+	client           *slack.Client
+	rtm              *slack.RTM
+	channelNameToID  map[SlackChannel]string
+	channelIDToName  map[string]SlackChannel
+	ownerID          string
+	ownerIMChannelID string
 }
 
 func newSlackProxy(config *SlackConfig) (*slackProxy, error) {
@@ -54,6 +56,31 @@ func (proxy *slackProxy) connect() error {
 	}
 	fmt.Printf("Generated the following Slack channel name to ID mapping: %v\n", proxy.channelNameToID)
 
+	users, err := proxy.rtm.GetUsers()
+	if err != nil {
+		return fmt.Errorf("Could not get Slack users: %v", err)
+	}
+
+	foundOwner := false
+	for _, user := range users {
+		if user.Name == proxy.config.Owner {
+			// We found the user struct representing the owner!
+			foundOwner = true
+
+			proxy.ownerID = user.ID
+			break
+		}
+	}
+	if !foundOwner {
+		return fmt.Errorf("Could not find a Slack user that matched the configured owner: %v", proxy.config.Owner)
+	}
+
+	_, _, imChannelID, err := proxy.rtm.OpenIMChannel(proxy.ownerID)
+	if err != nil {
+		return fmt.Errorf("Could not open a Slack IM channel with the owner: %v (%v)", proxy.config.Owner, proxy.ownerID)
+	}
+	proxy.ownerIMChannelID = imChannelID
+
 	return nil
 }
 
@@ -82,6 +109,10 @@ func (proxy *slackProxy) sendMessageAsBot(channelName SlackChannel, text string)
 	if err != nil {
 		fmt.Printf("Error while sending message: %v\n", err)
 	}
+}
+
+func (proxy *slackProxy) sendMessageToOwner(text string) {
+	proxy.rtm.SendMessage(proxy.rtm.NewOutgoingMessage(text, proxy.ownerIMChannelID))
 }
 
 func (proxy *slackProxy) getChannelName(channelID string) SlackChannel {
