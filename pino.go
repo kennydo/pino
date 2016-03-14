@@ -8,8 +8,11 @@ import (
 
 // Pino is the central orchestrator
 type Pino struct {
-	config   *Config
-	ircProxy *ircProxy
+	config                   *Config
+	ircProxy                 *ircProxy
+	slackProxy               *slackProxy
+	slackChannelToIRCChannel map[SlackChannel]IRCChannel
+	ircChannelToSlackChannel map[IRCChannel]SlackChannel
 }
 
 // NewPino creates a new Pino instance
@@ -24,13 +27,30 @@ func NewPino(config *Config) (*Pino, error) {
 	}
 	pino.ircProxy = ircProxy
 
+	slackProxy, err := newSlackProxy(&config.Slack)
+	if err != nil {
+		return pino, fmt.Errorf("Could not create Slack client: %v", err)
+	}
+	pino.slackProxy = slackProxy
+
+	pino.slackChannelToIRCChannel = make(map[SlackChannel]IRCChannel)
+	pino.ircChannelToSlackChannel = make(map[IRCChannel]SlackChannel)
+	// Set up the Slack channel -> IRC channel name mappings, and vice versa
+	for slackChannel, ircChannel := range pino.config.ChannelMapping {
+		pino.slackChannelToIRCChannel[slackChannel] = ircChannel
+		pino.ircChannelToSlackChannel[ircChannel] = slackChannel
+	}
+
 	return pino, nil
 }
 
 // Run connects to IRC and Slack and runs the main loop
 func (pino *Pino) Run() error {
 	if err := pino.ircProxy.connect(); err != nil {
-		return fmt.Errorf("Connection error: %s\n", err.Error())
+		return fmt.Errorf("IRC connection error: %s\n", err.Error())
+	}
+	if err := pino.slackProxy.connect(); err != nil {
+		return fmt.Errorf("Slack connection error: %s\n", err.Error())
 	}
 
 	// Channel to signal that the program should stop running
@@ -61,8 +81,12 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 				fmt.Printf("Disconnected from IRC!")
 
 			case irc.ACTION:
+				channel := IRCChannel(line.Target())
 				action := line.Text()
-				fmt.Printf("ACTION: %v %s\n", line.Nick, action)
+				username := line.Nick
+
+				message := fmt.Sprintf("```%v %v```", username, action)
+				pino.slackProxy.sendMessage(username, message, pino.ircChannelToSlackChannel[channel])
 
 			case irc.JOIN:
 				channel := line.Text()
