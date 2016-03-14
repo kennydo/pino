@@ -127,8 +127,18 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 				}
 
 			case irc.NICK:
+				oldNick := line.Nick
 				newNick := line.Text()
-				fmt.Printf("NICK: %v is now known as %v\n", line.Nick, newNick)
+				fmt.Printf("NICK: %v is now known as %v\n", oldNick, newNick)
+
+				message := fmt.Sprintf("```%v is now known as %v```", oldNick, newNick)
+				stateTracker := pino.ircProxy.client.StateTracker()
+				for ircChannel, slackChannel := range pino.ircChannelToSlackChannel {
+					// The state tracker has already registered the nick change, so check for the new nick
+					if _, ok := stateTracker.IsOn(string(ircChannel), newNick); ok != false {
+						pino.slackProxy.sendMessageAsBot(message, slackChannel)
+					}
+				}
 
 			case irc.PART:
 				reason := line.Text()
