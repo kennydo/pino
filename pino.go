@@ -85,12 +85,18 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 				action := line.Text()
 				username := line.Nick
 
+				fmt.Printf("ACTION: %v %s\n", username, action)
 				message := fmt.Sprintf("```%v %v```", username, action)
-				pino.slackProxy.sendMessage(username, message, pino.ircChannelToSlackChannel[channel])
+				pino.slackProxy.sendMessageAsUser(username, message, pino.ircChannelToSlackChannel[channel])
 
 			case irc.JOIN:
-				channel := line.Text()
+				channel := IRCChannel(line.Text())
+				username := line.Nick
+				usermask := line.Src
+
 				fmt.Printf("JOIN: %v(%v) has joined %v\n", line.Nick, line.Src, channel)
+				message := fmt.Sprintf("```%v(%v) has joined```", username, usermask)
+				pino.slackProxy.sendMessageAsBot(message, pino.ircChannelToSlackChannel[channel])
 
 			case irc.INVITE:
 				// Actually doing anything with invites has not been implemented yet.
