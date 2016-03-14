@@ -95,7 +95,7 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 				usermask := line.Src
 
 				fmt.Printf("JOIN: %v(%v) has joined %v\n", line.Nick, line.Src, channel)
-				message := fmt.Sprintf("```%v(%v) has joined```", username, usermask)
+				message := fmt.Sprintf("```%v(%v) joined the channel```", username, usermask)
 				pino.slackProxy.sendMessageAsBot(message, pino.ircChannelToSlackChannel[channel])
 
 			case irc.INVITE:
@@ -141,8 +141,14 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 				}
 
 			case irc.PART:
+				channel := IRCChannel(line.Target())
 				reason := line.Text()
-				fmt.Printf("PART: (%v) %v(%v) has left (%s)\n", line.Target(), line.Nick, line.Src, reason)
+				username := line.Nick
+				usermask := line.Src
+				fmt.Printf("PART: (%v) %v(%v) has left (%s)\n", channel, username, usermask, reason)
+
+				message := fmt.Sprintf("```%v(%v) left the channel```", username, usermask)
+				pino.slackProxy.sendMessageAsBot(message, pino.ircChannelToSlackChannel[channel])
 
 			case irc.PRIVMSG:
 				fmt.Printf("PRIVMSG: (%v) <%v> %v\n", line.Target(), line.Nick, line.Text())
