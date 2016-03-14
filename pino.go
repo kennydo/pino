@@ -109,17 +109,21 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 				fmt.Printf("KICK: (%v) %v has kicked %v (%v)\n", line.Target(), line.Nick, kickee, reason)
 
 			case irc.MODE:
+				username := line.Nick
+				mode := line.Args[1]
+
 				if len(line.Args) == 2 {
 					// This was a User mode command
 					destination := line.Args[0]
-					mode := line.Args[1]
-					fmt.Printf("MODE: %v has set mode %v on %v\n", line.Nick, mode, destination)
+					fmt.Printf("MODE: %v has set mode %v on %v\n", username, mode, destination)
 				} else {
 					// This was a Channel mode command
-					channel := line.Args[0]
-					mode := line.Args[1]
+					channel := IRCChannel(line.Args[0])
 					destination := line.Args[2]
-					fmt.Printf("MODE: (%v) %v has set mode %v on %v\n", channel, line.Nick, mode, destination)
+					fmt.Printf("MODE: (%v) %v sets %v %v\n", channel, username, mode, destination)
+
+					message := fmt.Sprintf("```%v sets %v %v```", username, mode, destination)
+					pino.slackProxy.sendMessageAsBot(message, pino.ircChannelToSlackChannel[channel])
 				}
 
 			case irc.NICK:
