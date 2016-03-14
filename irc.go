@@ -99,3 +99,23 @@ func (proxy *ircProxy) names(channel IRCChannel) []string {
 
 	return names
 }
+
+func (proxy *ircProxy) snapshotOfNicksInChannels() map[IRCChannel]map[string]bool {
+	mapping := make(map[IRCChannel]map[string]bool)
+
+	st := proxy.client.StateTracker()
+	for channelName := range proxy.config.Channels {
+		channel := st.GetChannel(string(channelName))
+		if channel == nil {
+			continue
+		}
+
+		mapping[channelName] = make(map[string]bool)
+
+		for nickname := range channel.Nicks {
+			mapping[channelName][nickname] = true
+		}
+	}
+
+	return mapping
+}
