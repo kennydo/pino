@@ -181,8 +181,13 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 
 				previousNickMemberships = pino.ircProxy.snapshotOfNicksInChannels()
 			case irc.TOPIC:
-				newTopic := line.Text()
-				fmt.Printf("TOPIC: (%v) %v has changed the topic to \"%v\"\n", line.Target(), line.Nick, newTopic)
+				channel := IRCChannel(line.Target())
+				username := line.Nick
+				topic := line.Text()
+				fmt.Printf("TOPIC: (%v) %v has changed the topic to \"%v\"\n", channel, username, topic)
+
+				message := fmt.Sprintf("```%v changed the topic to %v```", username, topic)
+				pino.slackProxy.sendMessageAsBot(message, pino.ircChannelToSlackChannel[channel])
 
 			default:
 				fmt.Printf("Received unrecognized line: %#v\n", line)
