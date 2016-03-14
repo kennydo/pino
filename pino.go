@@ -136,12 +136,14 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 				fmt.Printf("NICK: %v is now known as %v\n", oldNick, newNick)
 
 				message := fmt.Sprintf("```%v is now known as %v```", oldNick, newNick)
-				stateTracker := pino.ircProxy.client.StateTracker()
-				for ircChannel, slackChannel := range pino.ircChannelToSlackChannel {
-					// The state tracker has already registered the nick change, so check for the new nick
-					if _, ok := stateTracker.IsOn(string(ircChannel), newNick); ok != false {
-						pino.slackProxy.sendMessageAsBot(message, slackChannel)
+				for ircChannel, nicks := range previousNickMemberships {
+					if _, ok := nicks[oldNick]; !ok {
+						// The user was not in this channel
+						continue
 					}
+
+					slackChannel := pino.ircChannelToSlackChannel[ircChannel]
+					pino.slackProxy.sendMessageAsBot(message, slackChannel)
 				}
 
 				previousNickMemberships = pino.ircProxy.snapshotOfNicksInChannels()
