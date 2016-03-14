@@ -216,12 +216,7 @@ func (pino *Pino) handleSlackEvents(quit chan bool) {
 		case msg := <-pino.slackProxy.rtm.IncomingEvents:
 			switch event := msg.Data.(type) {
 			case *slack.MessageEvent:
-				// Sending any messages from a bot to IRC might cause a vicious cycle
-				if event.BotID == "" && event.Text != "" {
-					slackChannel := pino.slackProxy.getChannelName(event.Channel)
-
-					pino.ircProxy.sendMessage(pino.slackChannelToIRCChannel[slackChannel], event.Text)
-				}
+				pino.handleSlackMessageEvent(event, quit)
 			case *slack.ConnectingEvent:
 			case *slack.ConnectedEvent:
 			case *slack.HelloEvent:
@@ -235,4 +230,29 @@ func (pino *Pino) handleSlackEvents(quit chan bool) {
 			}
 		}
 	}
+}
+
+func (pino *Pino) handleSlackMessageEvent(event *slack.MessageEvent, quit chan bool) {
+	// For development, we'll still want to print out all received messages
+	fmt.Printf("Message: %#v\n", event)
+	slackChannel := pino.slackProxy.getChannelName(event.Channel)
+	destinationIRCChannel := pino.slackChannelToIRCChannel[slackChannel]
+
+	if event.BotID != "" {
+		// Sending any messages from a bot to IRC might cause a vicious cycle
+		return
+	}
+
+	if event.SubType == "message_changed" {
+		// We don't support changing messages because it'll get confusing in the IRC side
+		return
+	}
+
+	if event.SubType == "me_message" {
+		pino.ircProxy.sendAction(destinationIRCChannel, event.Text)
+		return
+	}
+
+	// In the normal case, it's a normal message
+	pino.ircProxy.sendMessage(destinationIRCChannel, event.Text)
 }

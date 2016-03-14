@@ -123,3 +123,7 @@ func (proxy *ircProxy) snapshotOfNicksInChannels() map[IRCChannel]map[string]boo
 func (proxy *ircProxy) sendMessage(channel IRCChannel, text string) {
 	proxy.client.Privmsg(string(channel), text)
 }
+
+func (proxy *ircProxy) sendAction(channel IRCChannel, action string) {
+	proxy.client.Action(string(channel), action)
+}
