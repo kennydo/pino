@@ -3,6 +3,7 @@ package pino
 import (
 	"crypto/md5"
 	"fmt"
+	"strings"
 
 	slack "github.com/nlopes/slack"
 )
@@ -85,4 +86,16 @@ func (proxy *slackProxy) sendMessageAsBot(channelName SlackChannel, text string)
 
 func (proxy *slackProxy) getChannelName(channelID string) SlackChannel {
 	return proxy.channelIDToName[channelID]
+}
+
+// Slack decodes '&', '<', and '>' per https://api.slack.com/docs/formatting#how_to_escape_characters
+// so we need to decode them.
+func decodeSlackHTMLEntities(input string) string {
+	output := input
+
+	output = strings.Replace(output, "&amp;", "&", -1)
+	output = strings.Replace(output, "&lt;", "<", -1)
+	output = strings.Replace(output, "&gt;", ">", -1)
+
+	return output
 }

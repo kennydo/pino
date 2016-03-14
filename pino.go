@@ -234,7 +234,8 @@ func (pino *Pino) handleSlackEvents(quit chan bool) {
 
 func (pino *Pino) handleSlackMessageEvent(event *slack.MessageEvent, quit chan bool) {
 	// For development, we'll still want to print out all received messages
-	fmt.Printf("Message: %#v\n", event)
+	//fmt.Printf("Message: %#v\n", event)
+
 	slackChannel := pino.slackProxy.getChannelName(event.Channel)
 	destinationIRCChannel := pino.slackChannelToIRCChannel[slackChannel]
 
@@ -248,11 +249,13 @@ func (pino *Pino) handleSlackMessageEvent(event *slack.MessageEvent, quit chan b
 		return
 	}
 
+	text := decodeSlackHTMLEntities(event.Text)
+
 	if event.SubType == "me_message" {
-		pino.ircProxy.sendAction(destinationIRCChannel, event.Text)
+		pino.ircProxy.sendAction(destinationIRCChannel, text)
 		return
 	}
 
 	// In the normal case, it's a normal message
-	pino.ircProxy.sendMessage(destinationIRCChannel, event.Text)
+	pino.ircProxy.sendMessage(destinationIRCChannel, text)
 }
