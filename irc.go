@@ -127,3 +127,27 @@ func (proxy *ircProxy) sendMessage(channel IRCChannel, text string) {
 func (proxy *ircProxy) sendAction(channel IRCChannel, action string) {
 	proxy.client.Action(string(channel), action)
 }
+
+func isBufferPlaybackStartLine(line *irc.Line) bool {
+	if line.Cmd != irc.PRIVMSG {
+		return false
+	}
+
+	if line.Nick != "***" {
+		return false
+	}
+
+	return line.Text() == "Buffer Playback..."
+}
+
+func isBufferPlaybackEndLine(line *irc.Line) bool {
+	if line.Cmd != irc.PRIVMSG {
+		return false
+	}
+
+	if line.Nick != "***" {
+		return false
+	}
+
+	return line.Text() == "Playback Complete."
+}

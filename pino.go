@@ -69,6 +69,11 @@ func (pino *Pino) Run() error {
 func (pino *Pino) handleIRCEvents(quit chan bool) {
 	previousNickMemberships := pino.ircProxy.snapshotOfNicksInChannels()
 
+	// For buffer playback, we care about whether the buffer playback mode changed in the previous line
+	// in deciding whether to print the subsequent lines
+	wasInBufferPlaybackMode := false
+	isInBufferPlaybackMode := false
+
 	for {
 		select {
 		case line := <-pino.ircProxy.incomingEvents:
@@ -96,7 +101,10 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 
 				fmt.Printf("ACTION: %v %s\n", username, action)
 				message := fmt.Sprintf("> *%v %v*", username, action)
-				pino.slackProxy.sendMessageAsUser(pino.ircChannelToSlackChannel[channel], username, message)
+
+				if !isInBufferPlaybackMode {
+					pino.slackProxy.sendMessageAsUser(pino.ircChannelToSlackChannel[channel], username, message)
+				}
 
 			case irc.JOIN:
 				channel := IRCChannel(line.Text())
@@ -174,12 +182,30 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 				target := line.Target()
 				username := line.Nick
 				text := line.Text()
+
 				fmt.Printf("PRIVMSG: (%v) <%v> %v\n", target, username, text)
 
-				possibleChannel := IRCChannel(target)
-				if slackChannel, ok := pino.ircChannelToSlackChannel[possibleChannel]; ok {
-					pino.slackProxy.sendMessageAsUser(slackChannel, username, text)
+				if isInBufferPlaybackMode {
+					if isBufferPlaybackEndLine(line) {
+						isInBufferPlaybackMode = false
+					}
+				} else {
+					if isBufferPlaybackStartLine(line) {
+						isInBufferPlaybackMode = true
+					}
 				}
+
+				// Simply being out of buffer playback mode is not sufficient for deciding to output the line
+				// because we consider ourselves out of the buffer playback mode on the line where playback ends.
+				if !wasInBufferPlaybackMode && !isInBufferPlaybackMode {
+
+					possibleChannel := IRCChannel(target)
+					if slackChannel, ok := pino.ircChannelToSlackChannel[possibleChannel]; ok {
+						pino.slackProxy.sendMessageAsUser(slackChannel, username, text)
+					}
+				}
+
+				wasInBufferPlaybackMode = isInBufferPlaybackMode
 
 			case irc.QUIT:
 				username := line.Nick
