@@ -82,3 +82,7 @@ func (proxy *slackProxy) sendMessageAsBot(channelName SlackChannel, text string)
 		fmt.Printf("Error while sending message: %v\n", err)
 	}
 }
+
+func (proxy *slackProxy) getChannelName(channelID string) SlackChannel {
+	return proxy.channelIDToName[channelID]
+}

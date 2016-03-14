@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	irc "github.com/fluffle/goirc/client"
+	"github.com/nlopes/slack"
 )
 
 // Pino is the central orchestrator
@@ -57,6 +58,7 @@ func (pino *Pino) Run() error {
 	quit := make(chan bool)
 
 	go pino.handleIRCEvents(quit)
+	go pino.handleSlackEvents(quit)
 
 	<-quit
 
@@ -204,5 +206,33 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 			// No message was received
 		}
 
+	}
+}
+
+// Consumes incoming Slack events in a loop
+func (pino *Pino) handleSlackEvents(quit chan bool) {
+	for {
+		select {
+		case msg := <-pino.slackProxy.rtm.IncomingEvents:
+			switch event := msg.Data.(type) {
+			case *slack.MessageEvent:
+				// Sending any messages from a bot to IRC might cause a vicious cycle
+				if event.BotID == "" && event.Text != "" {
+					slackChannel := pino.slackProxy.getChannelName(event.Channel)
+
+					pino.ircProxy.sendMessage(pino.slackChannelToIRCChannel[slackChannel], event.Text)
+				}
+			case *slack.ConnectingEvent:
+			case *slack.ConnectedEvent:
+			case *slack.HelloEvent:
+				fmt.Printf("Connected to Slack!")
+			case *slack.UserTypingEvent:
+			case *slack.LatencyReport:
+			case *slack.PresenceChangeEvent:
+			case *slack.ReconnectUrlEvent:
+			default:
+				fmt.Printf("Received unrecognized Slack msg: %#v\n", msg.Data)
+			}
+		}
 	}
 }
