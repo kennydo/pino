@@ -109,9 +109,14 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 				fmt.Printf("INVITE: %v(%v) invited you to %v\n", line.Nick, line.Src, channel)
 
 			case irc.KICK:
+				channel := IRCChannel(line.Target())
+				kicker := line.Nick
 				kickee := line.Args[1]
-				reason := line.Args[2:]
-				fmt.Printf("KICK: (%v) %v has kicked %v (%v)\n", line.Target(), line.Nick, kickee, reason)
+				reason := line.Args[2]
+				fmt.Printf("KICK: (%v) %v has kicked %v (%v)\n", channel, kicker, kickee, reason)
+
+				message := fmt.Sprintf("> *%v* kicked *%v* from the channel (%v)", kicker, kickee, reason)
+				pino.slackProxy.sendMessageAsBot(pino.ircChannelToSlackChannel[channel], message)
 
 				previousNickMemberships = pino.ircProxy.snapshotOfNicksInChannels()
 			case irc.MODE:
