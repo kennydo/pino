@@ -106,6 +106,7 @@ func (proxy *slackProxy) sendMessageAsBot(channelName SlackChannel, text string)
 	params := slack.NewPostMessageParameters()
 	params.Username = "IRC"
 	params.AsUser = false
+	params.LinkNames = 1
 
 	_, _, err := proxy.rtm.PostMessage(channelID, text, params)
 	if err != nil {
