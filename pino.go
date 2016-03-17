@@ -265,7 +265,7 @@ func (pino *Pino) handleSlackEvents(quit chan bool) {
 			case *slack.ConnectingEvent:
 			case *slack.ConnectedEvent:
 			case *slack.HelloEvent:
-				fmt.Printf("Connected to Slack!")
+				fmt.Printf("Connected to Slack!\n")
 			case *slack.UserTypingEvent:
 			case *slack.LatencyReport:
 			case *slack.PresenceChangeEvent:
