@@ -5,6 +5,8 @@ IRC:
   IsSSL: true
   Channels:
     '#CAA': ''
+  HighlightPatterns:
+    - "kedo"
 Slack:
   Owner: kedo
   Token: insert-token-for-slack-api-here

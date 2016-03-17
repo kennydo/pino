@@ -202,6 +202,14 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 
 					possibleChannel := IRCChannel(target)
 					if slackChannel, ok := pino.ircChannelToSlackChannel[possibleChannel]; ok {
+
+						if pino.ircProxy.shouldHighlightOwnerOnText(text) {
+							pino.slackProxy.sendMessageAsBot(
+								slackChannel,
+								fmt.Sprintf("@%v: you were pinged by %v", pino.slackProxy.config.Owner, username),
+							)
+						}
+
 						pino.slackProxy.sendMessageAsUser(slackChannel, username, text)
 					}
 				}

@@ -25,12 +25,13 @@ type SlackChannel string
 
 // IRCConfig define the IRC-specific config
 type IRCConfig struct {
-	Nickname string                       `yaml:"Nickname"`
-	Name     string                       `yaml:"Name"`
-	Server   string                       `yaml:"Server"`
-	Password string                       `yaml:"Password"`
-	IsSSL    bool                         `yaml:"IsSSL"`
-	Channels map[IRCChannel]IRCChannelKey `yaml:"Channels"`
+	Nickname          string                       `yaml:"Nickname"`
+	Name              string                       `yaml:"Name"`
+	Server            string                       `yaml:"Server"`
+	Password          string                       `yaml:"Password"`
+	IsSSL             bool                         `yaml:"IsSSL"`
+	Channels          map[IRCChannel]IRCChannelKey `yaml:"Channels"`
+	HighlightPatterns []string                     `yaml:"HighlightPatterns"`
 }
 
 // SlackConfig defines the Slack-specific config

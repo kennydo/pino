@@ -3,14 +3,16 @@ package pino
 import (
 	"crypto/tls"
 	"fmt"
+	"regexp"
 
 	irc "github.com/fluffle/goirc/client"
 )
 
 type ircProxy struct {
-	config         *IRCConfig
-	client         *irc.Conn
-	incomingEvents chan *irc.Line
+	config            *IRCConfig
+	client            *irc.Conn
+	incomingEvents    chan *irc.Line
+	highlightPatterns []*regexp.Regexp
 }
 
 func newIRCProxy(config *IRCConfig) (*ircProxy, error) {
@@ -31,6 +33,12 @@ func newIRCProxy(config *IRCConfig) (*ircProxy, error) {
 	server := config.Server
 	if server == "" {
 		return nil, fmt.Errorf("Server must be defined in IRC config")
+	}
+
+	proxy.highlightPatterns = make([]*regexp.Regexp, len(config.HighlightPatterns))
+	for i, patternString := range config.HighlightPatterns {
+		regex := regexp.MustCompile(patternString)
+		proxy.highlightPatterns[i] = regex
 	}
 
 	clientConfig := irc.NewConfig(nick, ident, name)
@@ -150,4 +158,20 @@ func isBufferPlaybackEndLine(line *irc.Line) bool {
 	}
 
 	return line.Text() == "Playback Complete."
+}
+
+func (proxy *ircProxy) shouldHighlightOwnerOnText(text string) bool {
+	if len(proxy.highlightPatterns) == 0 {
+		return false
+	}
+
+	for _, pattern := range proxy.highlightPatterns {
+		matchedString := pattern.FindString(text)
+
+		if matchedString != "" {
+			return true
+		}
+	}
+
+	return false
 }
