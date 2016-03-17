@@ -5,6 +5,7 @@ import (
 
 	irc "github.com/fluffle/goirc/client"
 	"github.com/nlopes/slack"
+	"gopkg.in/kyokomi/emoji.v1"
 )
 
 // Pino is the central orchestrator
@@ -287,6 +288,9 @@ func (pino *Pino) handleSlackMessageEvent(event *slack.MessageEvent, quit chan b
 	}
 
 	text := decodeSlackHTMLEntities(event.Text)
+
+	// Convert stuff like ":pizza:" to the actual pizza emoji
+	text = emoji.Sprint(text)
 
 	if event.SubType == "me_message" {
 		pino.ircProxy.sendAction(destinationIRCChannel, text)
