@@ -10,16 +10,19 @@ When users in the configured IRC channels send messages, you will see them in yo
     ```bash
     $ go get github.com/kennydo/pino
     ```
+
 3. Build the binary:
     ```bash
     $ cd $GOPATH/src/github.com/kennydo/pino
     $ go build cmd/pino.go
     ```
+
 4. Customize the [config](config-example.yaml) to your liking (using your text editor of choice):
     ```bash
     $ cp config-example.yaml config-rizon.yaml
     $ vim config-rizon.yaml
     ```
+
 5. Run *pino*:
     ```bash
     $ ./pino -config config-rizon.yaml
