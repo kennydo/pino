@@ -3,6 +3,7 @@ package pino
 import (
 	"crypto/md5"
 	"fmt"
+	"regexp"
 	"strings"
 
 	slack "github.com/nlopes/slack"
@@ -133,4 +134,49 @@ func decodeSlackHTMLEntities(input string) string {
 	output = strings.Replace(output, "&gt;", ">", -1)
 
 	return output
+}
+
+// Slack has advice on how to display formatted messages from the Slack backend,
+// so we should follow it: https://api.slack.com/docs/formatting#how_to_display_formatted_messages
+func (proxy *slackProxy) renderFormattedMessageForDisplay(input string) string {
+	slackBracketSequence := regexp.MustCompile("<(.*?)>")
+
+	return slackBracketSequence.ReplaceAllStringFunc(input, proxy.renderSlackBracketSequence)
+}
+
+func (proxy *slackProxy) renderSlackBracketSequence(input string) string {
+	// The input string includes the < and >
+	body := input[1 : len(input)-1]
+
+	// For channels or users, always replace by their display name.
+	if strings.HasPrefix(body, "#C") {
+		channelID := body[1:len(body)]
+		// We internally store channel names with the "#" prefix
+		return fmt.Sprintf("%v", proxy.channelIDToName[channelID])
+	}
+
+	if strings.HasPrefix(body, "@U") {
+		userID := body[1:len(body)]
+		return fmt.Sprintf("@%v", proxy.userIDToName[userID])
+	}
+
+	// For special sequences (ex: "<!here|@here>" or "<!channel>"), return the label
+	// if it's available, else return the "!" replaced by a "@".
+	if strings.HasPrefix(body, "!") {
+		indexOfPipe := strings.Index(body, "|")
+		if indexOfPipe >= 0 {
+			return body[indexOfPipe+1 : len(body)]
+		}
+
+		return fmt.Sprintf("@%v", body[1:len(body)])
+	}
+
+	// At this point, we can assume it's just a normal link.
+	// For links, display the label if available, else display just the raw URL.
+	indexOfPipe := strings.Index(body, "|")
+	if indexOfPipe >= 0 {
+		return body[indexOfPipe+1 : len(body)]
+	}
+
+	return body
 }

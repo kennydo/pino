@@ -298,7 +298,9 @@ func (pino *Pino) handleSlackMessageEvent(event *slack.MessageEvent, quit chan b
 		return
 	}
 
-	text := decodeSlackHTMLEntities(event.Text)
+	text := pino.slackProxy.renderFormattedMessageForDisplay(event.Text)
+
+	text = decodeSlackHTMLEntities(text)
 
 	// Convert stuff like ":pizza:" to the actual pizza emoji
 	text = emoji.Sprint(text)
