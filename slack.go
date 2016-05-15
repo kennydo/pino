@@ -14,6 +14,7 @@ type slackProxy struct {
 	rtm              *slack.RTM
 	channelNameToID  map[SlackChannel]string
 	channelIDToName  map[string]SlackChannel
+	userIDToName     map[string]string
 	ownerID          string
 	ownerIMChannelID string
 }
@@ -33,6 +34,8 @@ func newSlackProxy(config *SlackConfig) (*slackProxy, error) {
 	proxy.channelNameToID = make(map[SlackChannel]string)
 	proxy.channelIDToName = make(map[string]SlackChannel)
 
+	proxy.userIDToName = make(map[string]string)
+
 	return proxy, nil
 }
 
@@ -48,11 +51,8 @@ func (proxy *slackProxy) connect() error {
 		// The channel names returned by the API don't have the pound
 		channelName := SlackChannel(fmt.Sprintf("#%v", channel.Name))
 
-		// We don't care about unregistered channel
-		if _, ok := proxy.config.Channels[channelName]; ok {
-			proxy.channelNameToID[channelName] = channel.ID
-			proxy.channelIDToName[channel.ID] = channelName
-		}
+		proxy.channelNameToID[channelName] = channel.ID
+		proxy.channelIDToName[channel.ID] = channelName
 	}
 	fmt.Printf("Generated the following Slack channel name to ID mapping: %v\n", proxy.channelNameToID)
 
@@ -66,14 +66,15 @@ func (proxy *slackProxy) connect() error {
 		if user.Name == proxy.config.Owner {
 			// We found the user struct representing the owner!
 			foundOwner = true
-
 			proxy.ownerID = user.ID
-			break
 		}
+
+		proxy.userIDToName[user.ID] = user.Name
 	}
 	if !foundOwner {
 		return fmt.Errorf("Could not find a Slack user that matched the configured owner: %v", proxy.config.Owner)
 	}
+	fmt.Printf("Generated the following Slack user ID to name mapping: %v\n", proxy.userIDToName)
 
 	_, _, imChannelID, err := proxy.rtm.OpenIMChannel(proxy.ownerID)
 	if err != nil {
