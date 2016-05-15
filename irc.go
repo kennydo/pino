@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"regexp"
+	"strings"
 
 	irc "github.com/fluffle/goirc/client"
 )
@@ -129,11 +130,17 @@ func (proxy *ircProxy) snapshotOfNicksInChannels() map[IRCChannel]map[string]boo
 }
 
 func (proxy *ircProxy) sendMessage(channel IRCChannel, text string) {
-	proxy.client.Privmsg(string(channel), text)
+	lines := strings.Split(text, "\n")
+	for _, line := range lines {
+		proxy.client.Privmsg(string(channel), line)
+	}
 }
 
 func (proxy *ircProxy) sendAction(channel IRCChannel, action string) {
-	proxy.client.Action(string(channel), action)
+	lines := strings.Split(action, "\n")
+	for _, line := range lines {
+		proxy.client.Action(string(channel), line)
+	}
 }
 
 func isBufferPlaybackStartLine(line *irc.Line) bool {
