@@ -290,8 +290,11 @@ func (pino *Pino) handleSlackMessageEvent(event *slack.MessageEvent, quit chan b
 		return
 	}
 
-	if event.SubType == "message_changed" {
-		// We don't support changing messages because it'll get confusing in the IRC side
+	// We only support a small subset of message subtypes:
+	// - "" (no subtype means it's a normal message)
+	// - "me_message" (a /me action)
+	if event.SubType != "me_message" && event.SubType != "" {
+		fmt.Printf("Ignoring message with unsupported subtype: %#v\n", event)
 		return
 	}
 
