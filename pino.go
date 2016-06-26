@@ -247,8 +247,6 @@ func (pino *Pino) handleIRCEvents(quit chan bool) {
 			default:
 				fmt.Printf("Received unrecognized line: %#v\n", line)
 			}
-		default:
-			// No message was received
 		}
 
 	}
