@@ -10,10 +10,16 @@ import (
 )
 
 type ircProxy struct {
-	config            *IRCConfig
-	client            *irc.Conn
-	incomingEvents    chan *irc.Line
-	highlightPatterns []*regexp.Regexp
+	config         *IRCConfig
+	client         *irc.Conn
+	incomingEvents chan *irc.Line
+	highlightRules []*ircHighlightRule
+}
+
+type ircHighlightRule struct {
+	nickRegexp      *regexp.Regexp
+	messageRegexp   *regexp.Regexp
+	shouldHighlight bool
 }
 
 func newIRCProxy(config *IRCConfig) (*ircProxy, error) {
@@ -36,10 +42,24 @@ func newIRCProxy(config *IRCConfig) (*ircProxy, error) {
 		return nil, fmt.Errorf("Server must be defined in IRC config")
 	}
 
-	proxy.highlightPatterns = make([]*regexp.Regexp, len(config.HighlightPatterns))
-	for i, patternString := range config.HighlightPatterns {
-		regex := regexp.MustCompile(patternString)
-		proxy.highlightPatterns[i] = regex
+	proxy.highlightRules = make([]*ircHighlightRule, len(config.HighlightRules))
+	for i, highlightConfig := range config.HighlightRules {
+		var nickRegexp *regexp.Regexp
+		var messageRegexp *regexp.Regexp
+
+		if highlightConfig.NickPattern != "" {
+			nickRegexp = regexp.MustCompile(highlightConfig.NickPattern)
+		}
+
+		if highlightConfig.MessagePattern != "" {
+			messageRegexp = regexp.MustCompile(highlightConfig.MessagePattern)
+		}
+
+		proxy.highlightRules[i] = &ircHighlightRule{
+			nickRegexp:      nickRegexp,
+			messageRegexp:   messageRegexp,
+			shouldHighlight: highlightConfig.ShouldHighlight,
+		}
 	}
 
 	clientConfig := irc.NewConfig(nick, ident, name)
@@ -167,16 +187,24 @@ func isBufferPlaybackEndLine(line *irc.Line) bool {
 	return line.Text() == "Playback Complete."
 }
 
-func (proxy *ircProxy) shouldHighlightOwnerOnText(text string) bool {
-	if len(proxy.highlightPatterns) == 0 {
+func (proxy *ircProxy) shouldHighlightOwnerOnMessageByNick(message, nick string) bool {
+	if len(proxy.highlightRules) == 0 {
 		return false
 	}
 
-	for _, pattern := range proxy.highlightPatterns {
-		matchedString := pattern.FindString(text)
+	for _, rule := range proxy.highlightRules {
+		var nickMatches, messageMatches bool
 
-		if matchedString != "" {
-			return true
+		if (rule.nickRegexp != nil) && (rule.nickRegexp.FindString(nick) != "") {
+			nickMatches = true
+		}
+
+		if (rule.messageRegexp != nil) && (rule.messageRegexp.FindString(message) != "") {
+			messageMatches = true
+		}
+
+		if ((rule.nickRegexp == nil) || nickMatches) && ((rule.messageRegexp == nil) || messageMatches) {
+			return rule.shouldHighlight
 		}
 	}
 

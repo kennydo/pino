@@ -25,13 +25,23 @@ type SlackChannel string
 
 // IRCConfig define the IRC-specific config
 type IRCConfig struct {
-	Nickname          string                       `yaml:"Nickname"`
-	Name              string                       `yaml:"Name"`
-	Server            string                       `yaml:"Server"`
-	Password          string                       `yaml:"Password"`
-	IsSSL             bool                         `yaml:"IsSSL"`
-	Channels          map[IRCChannel]IRCChannelKey `yaml:"Channels"`
-	HighlightPatterns []string                     `yaml:"HighlightPatterns"`
+	Nickname       string                       `yaml:"Nickname"`
+	Name           string                       `yaml:"Name"`
+	Server         string                       `yaml:"Server"`
+	Password       string                       `yaml:"Password"`
+	IsSSL          bool                         `yaml:"IsSSL"`
+	Channels       map[IRCChannel]IRCChannelKey `yaml:"Channels"`
+	HighlightRules []IRCHighlightRuleConfig     `yaml:"HighlightRules"`
+}
+
+// IRCHighlightRuleConfig defines when to directly ping the owner on Slack.
+// You can define a nick pattern, a message pattern, or both.
+// If a pattern is not defined, then it is assumed to match all values for that.
+// The first rule that matches is executed. Default is to not highlight.
+type IRCHighlightRuleConfig struct {
+	NickPattern     string `yaml:"NickPattern"`
+	MessagePattern  string `yaml:"MessagePattern"`
+	ShouldHighlight bool   `yaml:"ShouldHighlight"`
 }
 
 // SlackConfig defines the Slack-specific config

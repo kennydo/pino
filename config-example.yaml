@@ -5,8 +5,12 @@ IRC:
   IsSSL: true
   Channels:
     '#CAA': ''
-  HighlightPatterns:
-    - "kedo"
+  HighlightRules:
+    - MessagePattern: "kedo\\.\\.\\."
+      NickPattern: "kedo"
+      ShouldHighlight: true
+    - MessagePattern: "kedo\\.\\.\\."
+      ShouldHighlight: false
 Slack:
   Owner: kedo
   Token: insert-token-for-slack-api-here
